@@ -1,0 +1,9 @@
+Vega7 (5600G iGPU)
+
+LBVH build time :
+
+[264 tris] scene 1 (animation) 2.9 ms
+
+[156 tris] scene 2 (simple) 2.2-2.7 ms
+
+[218,724 tris] scene 3 (chess) 12.5 ms

@@ -1,0 +1,125 @@
+<html>
+    <head>
+        <script src="scripts/obj/obj-file-parser.js"></script>
+        <script src="scripts/obj/parse-obj.js"></script>
+        <script src="scripts/ext_library.js"></script>
+        <script src="scripts/camera.js"></script>
+        <script src="scripts/light.js"></script>
+        <script src="scripts/cube.js"></script>
+        <script src="scripts/scene.js"></script>
+        <script src="scripts/raytracer/raytracer.js"></script>        
+        <script src="scripts/bvh/kernels/rearrange.js"></script>
+        <script src="scripts/bvh/kernels/radix-tree.js"></script>
+        <script src="scripts/bvh/kernels/radix-sort.js"></script>
+        <script src="scripts/bvh/kernels/clear-buffers.js"></script>
+        <script src="scripts/bvh/kernels/bvh-up-pass.js"></script>
+        <script src="scripts/bvh/kernels/aabb-z-idx.js"></script>
+        <script src="scripts/bvh/build-bvh.js"></script>
+        <script src="scripts/main.js"></script>
+        <style>
+            body {
+                margin: 0px;
+                width: 100%;
+                height: 100%;
+                display: flex;
+            }
+            canvas {
+                margin: auto 10px;
+                height: calc(100% - 50px);
+                width: calc(100% - 50px);
+                aspect-ratio: 2 / 3;
+                background-color: #f0f0f0;
+            }
+            .no-select {
+                -webkit-user-select: none; /* Safari */        
+                -moz-user-select: none; /* Firefox */
+                -ms-user-select: none; /* IE10+/Edge */
+                user-select: none; /* Standard */
+            }
+            #ray_trace_depth {
+                width: 3em;
+            }
+            #shadow_depth {
+                width: 3em;
+            }
+        </style>
+    </head>
+    <body>
+        <div style="flex-grow: 1; margin: 25px 0px;"></div>
+        <canvas id="canvas"></canvas>
+        <div style="flex-grow: 2; margin: 25px 0px; height: calc(100% - 50px); font-family: monospace;">
+            <div style="width: 225px">
+                <span style="font-size: 18px;">WEBGPU BVH DEMO</span><br>
+                <p>Uses WebGPU compute shaders to build a BVH and renders the result with ray tracing. Drag and drop an .obj file to begin. 
+                    <br>
+                    (or load scene by button)</p>
+            Triangles : { <span id="triangle-count">2,000,000</span> } <br><br>
+            Parse File: { <span id="parse-time">0.000001s</span> }<br>
+            Build BVH : { <span id="build-time">------ ms</span> }<br><br>
+
+                in particular: <br>
+
+                aabb-z-idx:  { <span id="aabb-z-idx">------ ms</span> }<br>
+                radix-sort:  { <span id="radix-sort">------ ms</span> }<br>
+                radix-tree:  { <span id="radix-tree">------ ms</span> }<br>
+                bvh-up-pass: { <span id="bvh-up-pass">------ ms</span> }<br>
+                rearrange:   { <span id="rearrange">------ ms</span> }<br>
+
+                <br>
+                build-bvh:   { <span id="build-bvh">------- ms</span> }<br>
+                <br>
+                RTRT-fps:   { <span id="RTRT-fps">0 FPS</span> }<br>
+                <br>
+
+                <label>
+                <input type="checkbox" id="auto_rotate" />
+                auto rotation
+                </label>
+
+                <br>
+                <label>
+                    <input type="checkbox" id="animate_light" />
+                    animate light
+                    </label>
+
+                <br>
+
+                <label>
+                    <input type="checkbox" id="animate_scene" />
+                    animate scene
+                    </label>
+
+                <br>
+
+                <label>
+                <input type="checkbox" id="rebuild_LBVH_each_frame" />
+                rebuild LBVH (each frame)
+                </label>
+
+                <br>
+                <br>
+                <label for="raytrace_depth">Raytrace depth (0-9):</label>
+                <input type="number" id="raytrace_depth" value="3" placeholder="x1" step="1" min="0" max="9" />
+
+                <br>
+                <br>
+                <label for="shadow_depth">Shadow depth (0-9):</label>
+                <input type="number" id="shadow_depth" value="2" placeholder="x1" step="1" min="0" max="9" />
+
+            <br>
+            <br>
+            <input id="load_scene_elem1" type="button" value="Load scene 1 (animation)">
+            <br>
+            <br>
+            <input id="load_scene_elem2" type="button" value="Load scene 2 (simple)">
+            <br>
+            <br>
+            <input id="load_scene_elem3" type="button" value="Load scene 3 (chess)">
+            <br>
+
+            <br>only flat normals are supported (smooth normals support will be added later)
+            <br>
+            </div>
+        </div>
+    </body>
+</html>
