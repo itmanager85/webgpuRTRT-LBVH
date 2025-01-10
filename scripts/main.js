@@ -1,3 +1,5 @@
+let adapter, device;
+
 let bvhTree = null;
 
 let raytrace_depth = 3;
@@ -10,7 +12,7 @@ let loaded_scene_index = -1;
 let scene = null;
 
 window.onload = async () => {
-    const { adapter, device } = await initWebGPU()
+    await initWebGPU()
     if (!adapter || !device) return
 
     setBuildTime()
@@ -161,7 +163,12 @@ window.onload = async () => {
     }
 
     {
+        let last_contents_drag_and_drop = null;
+
         async function readFiles(contents, flag_load_drop = false) {
+
+            last_contents_drag_and_drop = flag_load_drop ? contents : null;
+
            // setBuildTime()
             setParseTime()
             setTriangles()
@@ -288,7 +295,6 @@ window.onload = async () => {
             loaded_scene_index = 1;
             load_scene_from_file("./3d_models/Stonehenge + 9 cubes.obj");
 
-            //point_light.deactivate_animate(false);
             checkbox_animate_light.checked = false;
 
             checkbox_animate_scene.checked = true;
@@ -334,10 +340,6 @@ window.onload = async () => {
 
             load_scene_from_file("./3d_models/chess_v1.obj");
 
-            //if (PT) {
-            //    point_light.set_scene_center(PT.camera.lookAt); 
-            //}
-
             checkbox_animate_light.checked = true;
             checkbox_animate_scene.checked = false;
             checkbox_rebuild_LBVH.checked = false;
@@ -355,6 +357,34 @@ window.onload = async () => {
                 //.then( text => console.log(text) )
                 .then( text => {contents.push(text); readFiles(contents)} )
         }
+
+        
+        const select_gpu_adapter = document.getElementById('gpu_adapter'); 
+        select_gpu_adapter.addEventListener('change', async function() {
+            
+            //alert(this.value);
+
+            let options = { powerPreference: this.value };
+            if ( "default" == this.value) {
+                options.powerPreference = undefined;
+            }
+
+            await initWebGPU(options);
+            if (!adapter || !device) return
+
+            bvhTree = new BVHTree(device);
+            PT = null
+
+            if ( 0 == loaded_scene_index ) {
+                readFiles(last_contents_drag_and_drop, true);
+            } else if ( 1 == loaded_scene_index ) {
+                load_scene_elem1.click();
+            } else if ( 2 == loaded_scene_index ) {
+                load_scene_elem2.click();
+            } else if ( 3 == loaded_scene_index ) {
+                load_scene_elem3.click();
+            }
+        });
     }
 
     document.querySelector("#auto_rotate").addEventListener("change", e => {
@@ -450,9 +480,10 @@ window.onload = async () => {
     load_scene_elem1.click(); // for github version
 }
 
-async function initWebGPU() {
-    const adapter = await navigator.gpu?.requestAdapter()
-    const device  = await adapter?.requestDevice()
+async function initWebGPU( options = { powerPreference: undefined } ) {
+
+    adapter = await navigator.gpu?.requestAdapter(options)
+    device  = await adapter?.requestDevice()
 
     if (!device) {
         alert("browser does not support webGPU!")
