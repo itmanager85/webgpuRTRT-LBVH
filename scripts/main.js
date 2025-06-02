@@ -59,16 +59,6 @@ window.onload = async () => {
                 for (let i = 0; i<scene.cubes.length; i++) {
                     bvhTree.update_triangles_in_gpu_buffer(156 + (i* 6*2), scene.cubes[i].faces_animate, 6*2);
                 }
-
-                let bounds_default = bvhTree.BOUNDS;
-                let bounds = scene.get_bounds();
-
-                let NEW_BOUNDS = {
-                    min: [Math.min(bounds_default.min[0], bounds.min[0]), Math.min(bounds_default.min[1], bounds.min[1]), Math.min(bounds_default.min[2], bounds.min[2])],
-                    max: [Math.max(bounds_default.max[0], bounds.max[0]), Math.max(bounds_default.max[1], bounds.max[1]), Math.max(bounds_default.max[2], bounds.max[2])]
-                } 
-
-                bvhTree.update_bounds(NEW_BOUNDS); // TO DO: do it in CS (real time)
             }
 
             if (rebuild_LBVH_flag) {
@@ -467,6 +457,8 @@ async function initWebGPU( options = { powerPreference: undefined } ) {
     if (!device) {
         alert("browser does not support webGPU!")
         return null
+    } else {
+        console.log("Устройство получено:", device);
     }
 
     return { adapter, device }

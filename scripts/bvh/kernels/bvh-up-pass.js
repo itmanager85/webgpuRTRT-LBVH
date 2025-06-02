@@ -118,20 +118,9 @@ class BVH_UP_PASS {
         this.size = size;
         this.reserved_size = size;
 
-        //if (this.BVH_BUFFER) {
-        //    this.BVH_BUFFER.destroy()
-        //}
-
-        //if (this.UNIFORM_BUFFER) {
-        //    this.UNIFORM_BUFFER.destroy()
-        //}
-
         // create all the necessary buffers
         this.BVH_BUFFER = this.device.createBuffer({
             size: size * 64,
-
-            // original
-            //usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
 
             // for debug
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC  // Set the appropriate buffer usage
@@ -231,7 +220,7 @@ class BVH_UP_PASS {
             // если зарезервированного объёма данных не хватает, то резервируем в 2 раза больше чем требуется сейчас
             const reserve_coeff = flag_double_reserve ? (size * 2) : size;
 
-            // но не больше 1M (max)
+            // но не больше 2.1M (max)
             const new_reserved_size = Math.min( reserve_coeff, this.MAX_TRIANGLES_COUNT );
 
             // пересоздаём буферы и привязки к PIPELINE

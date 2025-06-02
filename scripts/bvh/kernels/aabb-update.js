@@ -1,4 +1,4 @@
-class AABB_Z_IDX {
+class AABB_UPDATE {
 
     // shader parameters
     WG_SIZE = 64
@@ -53,7 +53,7 @@ class AABB_Z_IDX {
 
         this.SM = device.createShaderModule({
             code: this.SRC(),
-            label: "AABB/Z-index shader module"
+            label: "AABB/Update shader module"
         })
 
         this.PIPELINE = this.device.createComputePipeline({
@@ -62,30 +62,35 @@ class AABB_Z_IDX {
             }),
             compute: {
                 module: this.SM,
-                entryPoint: "compute_aabb_z_idx"
+                entryPoint: "compute_aabb_bounds"
             }
         })
 
         return true;
     }
 
+    TRIANGLE_BUFFER = null;
+
     // текущее количество треугольников в сцене 
     size = 0
 
-    // зарезервированное место под буферы (BVH_BUFFER), максимальное количество треугольников (под которые уже выделена память)
-    //reserved_size = 0;
-
-    hard_reset_size(AABB_BUFFER, size) { //, bounds
+    hard_reset_size(TRIANGLE_BUFFER, size) { //, bounds
 
         if (size < 0 || size > this.MAX_TRIANGLES_COUNT) { // 2.1M (max)
             return false;
         }
 
-        this.AABB_BUFFER = AABB_BUFFER;
+        // а если 0 треугольников или (null == TRIANGLE_BUFFER) ?
+        this.TRIANGLE_BUFFER = TRIANGLE_BUFFER;
 
-        this.Z_IDX_BUFFER = this.device.createBuffer({
-            size: size *  4,
+        // create all the necessary buffers
+        this.AABB_BUFFER = this.device.createBuffer({
+            size: size * 32,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+        })
+        this.UNIFORM_BUFFER = this.device.createBuffer({
+            size: 16,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
 
         // create the bind group
@@ -96,14 +101,14 @@ class AABB_Z_IDX {
                     binding: 0,
                     visibility: GPUShaderStage.COMPUTE,
                     resource: {
-                        buffer: this.AABB_BUFFER
+                        buffer: this.TRIANGLE_BUFFER
                     }
                 },
                 {
                     binding: 1,
                     visibility: GPUShaderStage.COMPUTE,
                     resource: {
-                        buffer: this.Z_IDX_BUFFER
+                        buffer: this.AABB_BUFFER
                     }
                 },
                 {
@@ -120,23 +125,35 @@ class AABB_Z_IDX {
         //this.reserved_size = size;
     }
 
-    update_bounds(bounds) {
-        this.UNIFORM_BUFFER = bounds;
+    update_num_tris_uniform() {
+
+        const BUFF = new ArrayBuffer(16)
+        const   DV = new DataView(BUFF)
+
+        DV.setInt32(0, this.size, true)
+
+        this.device.queue.writeBuffer(
+            this.UNIFORM_BUFFER,
+            0,
+            BUFF,
+            0,
+            16
+        )
     }
 
-    update(AABB_BUFFER, size, bounds) {
+    update(TRIANGLE_BUFFER, size) {
 
-        if (AABB_BUFFER.size != 32 * size) {
-            console.warn(`in AABB/Z-index: buffer size [ ${AABB_BUFFER.size} ] does not match requested size [ ${size} ]`)
+        if (TRIANGLE_BUFFER.size != 48 * size) {
+            console.warn(`in AABB/Update: buffer size [ ${TRIANGLE_BUFFER.size} ] does not match requested size [ ${size} ]`)
             return
         }
 
-        this.update_bounds( bounds );
-        this.hard_reset_size( AABB_BUFFER, size );
+        this.hard_reset_size( TRIANGLE_BUFFER, size );
+        this.update_num_tris_uniform();
     }
 
-    prepare_buffers( AABB_BUFFER, NUM_TRIS, MODEL_BOUNDS ) {
-        this.update( AABB_BUFFER, NUM_TRIS, MODEL_BOUNDS );
+    prepare_buffers( I_TRIANGE_BUFFER, NUM_TRIS ) {
+        this.update( I_TRIANGE_BUFFER, NUM_TRIS );
     }
 
     async execute() {
@@ -156,57 +173,46 @@ class AABB_Z_IDX {
 
         }
 
-
-        return { AABB_BUFFER : this.AABB_BUFFER, Z_IDX_BUFFER : this.Z_IDX_BUFFER }
+        return { AABB_BUFFER : this.AABB_BUFFER }
     }
 
     SRC() {
-        return /* wgsl */ `
+        return ` // wgsl       
+
+        struct Triangle {
+            v0 : vec3f,
+            v1 : vec3f,
+            v2 : vec3f
+        };
 
         struct AABB {
             min : vec3f,
             max : vec3f
-        };
+        }
 
         struct Uniforms {
-            min : vec3f,
-            temp1 : f32, //num : i32,
-            max : vec3f,
-            temp2 : f32,
             num : i32
-            //temp_v : vec3u
         };
-
-        @group(0) @binding(0) var<storage, read> aabbs           : array<AABB>;
-        @group(0) @binding(1) var<storage, read_write> z_indexes : array<u32>;
+            
+        @group(0) @binding(0) var<storage, read> triangles   : array<Triangle>;
+        @group(0) @binding(1) var<storage, read_write> aabbs : array<AABB>;
         @group(0) @binding(2) var<uniform> uniforms : Uniforms;
 
         @compute @workgroup_size(${this.WG_SIZE})
-        fn compute_aabb_z_idx(@builtin(global_invocation_id) global_id : vec3u) {
+        fn compute_aabb_bounds(@builtin(global_invocation_id) global_id : vec3u) {
             var idx : i32 = i32(global_id.x);
             if (idx >= uniforms.num) {
                 return;
             }
 
-            var box : AABB = aabbs[idx];
-            var cen : vec3f = (box.max + box.min) * .5f;
-            var rel : vec3f = (cen - uniforms.min) / (uniforms.max - uniforms.min);
+            var tri : Triangle = triangles[idx];
             
-            z_indexes[idx] = morton_code(vec3u(rel * 1023.99f));
-        }
+            var box : AABB;
+            box.min = min(tri.v0, min(tri.v1, tri.v2));
+            box.max = max(tri.v0, max(tri.v1, tri.v2));
 
-        fn morton_code(upos : vec3u) -> u32 {
-            return split_3(upos.x) | (split_3(upos.y) << 1) | (split_3(upos.z) << 2);
+            aabbs[idx] = box;
         }
-        
-        // from: https://stackoverflow.com/questions/1024754/how-to-compute-a-3d-morton-number-interleave-the-bits-of-3-ints
-        fn split_3(u : u32) -> u32 {
-            var x : u32 = u;
-            x = (x | (x << 16)) & 0x030000FFu;
-            x = (x | (x <<  8)) & 0x0300F00Fu;
-            x = (x | (x <<  4)) & 0x030C30C3u;
-            x = (x | (x <<  2)) & 0x09249249u;
-            return x;
-        }`
+        `
     }
 }

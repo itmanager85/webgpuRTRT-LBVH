@@ -14,6 +14,8 @@
         <script src="scripts/bvh/kernels/clear-buffers.js"></script>
         <script src="scripts/bvh/kernels/bvh-up-pass.js"></script>
         <script src="scripts/bvh/kernels/aabb-z-idx.js"></script>
+        <script src="scripts/bvh/kernels/aabb-update.js"></script>
+        <script src="scripts/bvh/kernels/scene-bounds.js"></script>
         <script src="scripts/bvh/build-bvh.js"></script>
         <script src="scripts/main.js"></script>
         <style>
@@ -55,14 +57,14 @@
         <div style="flex-grow: 2; margin: 25px 0px; height: calc(100% - 50px); font-family: monospace;">
             <div style="width: 225px">
                 <span style="font-size: 18px;" class="centered-block">WEBGPU RTRT-LBVH DEMO</span>
-                <span style="font-size: 18px;" class="centered-block">v0.47</span>
+                <span style="font-size: 18px;" class="centered-block">v0.50</span>
                 <p>Uses WebGPU compute shaders to build a BVH and renders the result with ray tracing. Drag and drop an .obj file to begin. 
                     <br>
                     (or load scene by button)</p>
 
                     <form>
-                        <label for="cars">Choose a adapter (GPU):</label>
-                        <select id="gpu_adapter" name="gpu adapter">
+                        <label for="gpu_adapter">Choose a adapter (GPU):</label>
+                        <select id="gpu_adapter" name="gpu_adapter">
                             <option value="default">default</option>
                             <option value="high-performance">high-performance</option>
                             <option value="low-power">low-power</option>

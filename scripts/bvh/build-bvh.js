@@ -2,6 +2,9 @@ class BVHTree {
 
     device = null;
 
+    aabb_update;
+    scene_bounds;
+
     aabb_z_idx;
     radix_sort;
     radix_tree;
@@ -21,6 +24,9 @@ class BVHTree {
         }
 
         this.device = device;
+
+        this.aabb_update = new AABB_UPDATE(device);
+        this.scene_bounds = new SCENE_BOUNDS(device);
 
         this.aabb_z_idx = new AABB_Z_IDX(device)
         this.radix_sort = new RadixSort(device)
@@ -65,14 +71,14 @@ class BVHTree {
         )
     }
 
-    // TO DO: compute & update bounds in real time in wgsl compute shaders
-    update_bounds( new_bounds ){
-        //this.BOUNDS = new_bounds;
-        this.aabb_z_idx.update_bounds(new_bounds);
-    }
 
     prepare_kernel_buffers() {
-        this.aabb_z_idx.prepare_buffers( this.I_TRIANGE_BUFFER, this.NUM_TRIS, this.BOUNDS );
+
+        this.aabb_update.prepare_buffers( this.I_TRIANGE_BUFFER, this.NUM_TRIS );
+        this.scene_bounds.prepare_buffers( this.aabb_update.AABB_BUFFER, this.NUM_TRIS );
+
+        this.aabb_z_idx.prepare_buffers( this.aabb_update.AABB_BUFFER, this.NUM_TRIS, this.scene_bounds.UNIFORM_BUFFER );
+
         this.radix_sort.prepare_buffers( this.aabb_z_idx.Z_IDX_BUFFER, this.NUM_TRIS );
         this.radix_tree.prepare_buffers( this.aabb_z_idx.Z_IDX_BUFFER, this.NUM_TRIS );
 
@@ -87,7 +93,11 @@ class BVHTree {
 
     async build () {
 
-        // посчитать BOUNDS
+        // compute & update bounds in real time in wgsl compute shaders
+        // compute AABB_BOUNDS
+        await this.aabb_update.execute();
+        // reduce SCENE_BOUNDS
+        await this.scene_bounds.execute();
 
         // compute AABB and morton code for each triangle
         //const { AABB_BUFFER, Z_IDX_BUFFER } = 
@@ -116,7 +126,11 @@ class BVHTree {
 
         // ms for 219k triangles num (on iGPU)
 
-        // TO DO: посчитать BOUNDS
+        // compute & update bounds in real time in wgsl compute shaders
+        // compute AABB_BOUNDS
+        await this.aabb_update.execute();
+        // reduce SCENE_BOUNDS
+        await this.scene_bounds.execute();
 
         // compute AABB and morton code for each triangle
         // 1 ms
