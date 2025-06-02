@@ -1,7 +1,16 @@
 # WEBGPU LBVH RTRT demo
 
-This demo builds a linear BVH on the GPU using compute shaders based on the algorithm in [this paper](https://research.nvidia.com/sites/default/files/pubs/2012-06_Maximizing-Parallelism-in/karras2012hpg_paper.pdf). 
+base webgpu LBVH builder forked from [here](https://github.com/AddisonPrairie/WebGPU-LVBH-demo)
 
-![demo](media/demo.gif)
+and optimized by itmanager85 for real-time ray-tracing (with dynamic scenes)
 
-You can try the demo [here](https://itmanager85.github.io/webgpuRTRT-LBVH/) - just drag and drop an .obj model. It uses [this repository](https://github.com/WesUnwin/obj-file-parser) for parsing .obj files.
+scene 1
+![new_demo_1](media/scene_1.png)
+
+scene 2
+![new_demo_2](media/scene_2.png)
+
+scene 3
+![new_demo_3](media/scene_3.1.png)
+
+You can try the demo [here](https://itmanager85.github.io/webgpuRTRT-LBVH/) - just load scene by button (or just drag and drop an .obj model)

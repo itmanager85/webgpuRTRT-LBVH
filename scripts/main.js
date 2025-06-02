@@ -27,11 +27,10 @@ window.onload = async () => {
     let animate_scene_flag = false; 
     let rebuild_LBVH_flag = false; 
 
-    let lastCalledTime;
-    let count_sum = 0;
-
-    delta_sum = 0.0;
-    FPS_sum = 0.0;
+    // FPS counter
+    let lastTime = performance.now();
+    let frames = 0;
+    const fpsDisplay = document.getElementById('RTRT-fps');
 
     async function frame() {
         if (PT) {
@@ -80,32 +79,12 @@ window.onload = async () => {
             
             await PT.draw()
 
-            if(!lastCalledTime) {
-                lastCalledTime = performance.now();
-                delta_sum = 0.0
-                FPS_sum = 0.0
-                count_sum = 0;
-             } else {
-
-                let now = performance.now();
-                let delta = (now - lastCalledTime);
-                lastCalledTime = now;
-                let fps = 1000.0 / delta;
-
-                delta_sum += delta;
-                FPS_sum += fps;
-                count_sum += 1;
-
-                if ( delta_sum >= 500 ) {
-
-                    let avg_delta = delta_sum / count_sum;
-                    let fps = Math.round( 1000.0 / avg_delta );
-                    document.querySelector("#RTRT-fps").textContent = fps.toString() + " FPS";
-
-                    delta_sum = 0.0
-                    FPS_sum = 0.0
-                    count_sum = 0;
-                }
+            frames++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fpsDisplay.textContent = `${frames} FPS`;
+                frames = 0;
+                lastTime = now;
             }
         }
 
