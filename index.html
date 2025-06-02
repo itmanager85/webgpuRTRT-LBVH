@@ -42,6 +42,11 @@
             #shadow_depth {
                 width: 3em;
             }
+            .centered-block {
+                display: flex;
+                justify-content: center; /* по горизонтали */
+                align-items: center;     /* по вертикали */
+            }
         </style>
     </head>
     <body>
@@ -49,7 +54,8 @@
         <canvas id="canvas"></canvas>
         <div style="flex-grow: 2; margin: 25px 0px; height: calc(100% - 50px); font-family: monospace;">
             <div style="width: 225px">
-                <span style="font-size: 18px;">WEBGPU BVH DEMO</span><br>
+                <span style="font-size: 18px;" class="centered-block">WEBGPU RTRT-LBVH DEMO</span>
+                <span style="font-size: 18px;" class="centered-block">v0.47</span>
                 <p>Uses WebGPU compute shaders to build a BVH and renders the result with ray tracing. Drag and drop an .obj file to begin. 
                     <br>
                     (or load scene by button)</p>
